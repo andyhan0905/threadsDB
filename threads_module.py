@@ -259,8 +259,130 @@ class ThreadsUI:
         self.post_threads_button.pack(side=tk.LEFT, padx=5)  # 왼쪽으로 이동
         
         # ===== 감성 포스팅 영역 구성 =====
-        # 감성 포스팅 내용은 추후 구현 예정 - 중앙 정렬
-        ttk.Label(self.emotional_frame, text="감성 포스팅 기능은 추후 구현 예정입니다.").pack(padx=20, pady=50)
+        # 감성 포스팅 내용 구성 - 일반 포스팅과 유사하게 구성
+        emotional_settings_frame = ttk.Frame(self.emotional_frame)
+        emotional_settings_frame.pack(fill=tk.X, expand=False, padx=5, pady=5)
+
+        # 자동화 설정
+        auto_emotional_frame = ttk.Frame(emotional_settings_frame)
+        auto_emotional_frame.pack(fill=tk.X, pady=2)
+        self.emotional_auto_var = tk.BooleanVar(value=False)  # 초기값은 비활성화
+
+        # 체크박스 참조 저장
+        self.emotional_auto_checkbox = ttk.Checkbutton(
+            auto_emotional_frame, 
+            text="자동 게시 활성화", 
+            variable=self.emotional_auto_var,
+            command=self.toggle_emotional_auto
+        )
+        self.emotional_auto_checkbox.pack(side=tk.LEFT, padx=5)
+
+        # 수집 간격
+        interval_frame = ttk.Frame(emotional_settings_frame)
+        interval_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(interval_frame, text="게시 간격(분):").pack(side=tk.LEFT, padx=5)
+
+        self.emotional_interval_var = tk.StringVar(value="30")  # 기본값 30분
+        vcmd = (self.parent.register(validate_numeric_input), '%P')
+        ttk.Spinbox(
+            interval_frame, 
+            from_=15,  # 최소 15분
+            to=1440,   # 최대 24시간
+            width=5, 
+            textvariable=self.emotional_interval_var,
+            validate="key", 
+            validatecommand=vcmd
+        ).pack(side=tk.LEFT, padx=5)
+
+        # 경고 메시지 추가
+        warning_label = ttk.Label(interval_frame, 
+                                text="최소 15분 권장",
+                                foreground="red")
+        warning_label.pack(side=tk.LEFT, padx=5)
+
+        # 쓰레드 갯수 설정 - 새로 추가된 부분
+        threads_count_frame = ttk.Frame(emotional_settings_frame)
+        threads_count_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(threads_count_frame, text="쓰레드 갯수:").pack(side=tk.LEFT, padx=5)
+
+        self.threads_count_var = tk.StringVar(value="3")  # 기본값 3개
+        ttk.Spinbox(
+            threads_count_frame, 
+            from_=1, 
+            to=5,      # 최대 5개로 제한
+            width=5, 
+            textvariable=self.threads_count_var,
+            validate="key", 
+            validatecommand=vcmd
+        ).pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(threads_count_frame, text="(최대 5개)").pack(side=tk.LEFT, padx=5)
+
+        # 최대 항목 수
+        max_items_frame = ttk.Frame(emotional_settings_frame)
+        max_items_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(max_items_frame, text="최대 게시물 수:").pack(side=tk.LEFT, padx=5)
+        self.emotional_max_posts_var = tk.StringVar(value="5")  # 기본값 5개
+        ttk.Spinbox(
+            max_items_frame, 
+            from_=1, 
+            to=20, 
+            width=5, 
+            textvariable=self.emotional_max_posts_var,
+            validate="key", 
+            validatecommand=vcmd
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Label(max_items_frame, text="(한 번에 처리할 항목 수)").pack(side=tk.LEFT, padx=5)
+
+        # 자동화 상태 표시
+        status_frame = ttk.Frame(emotional_settings_frame)
+        status_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(status_frame, text="자동화 상태:").pack(side=tk.LEFT, padx=5)
+        self.emotional_status_var = tk.StringVar(value="비활성화됨")
+        ttk.Label(status_frame, textvariable=self.emotional_status_var).pack(side=tk.LEFT, padx=5)
+
+        # 다음 실행 시간
+        next_frame = ttk.Frame(emotional_settings_frame)
+        next_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(next_frame, text="다음 실행 예정:").pack(side=tk.LEFT, padx=5)
+        self.emotional_next_run_var = tk.StringVar(value="없음")
+        ttk.Label(next_frame, textvariable=self.emotional_next_run_var).pack(side=tk.LEFT, padx=5)
+
+        # 버튼 프레임
+        emotional_button_frame = ttk.Frame(self.emotional_frame)
+        emotional_button_frame.pack(fill=tk.X, pady=5)
+
+        # 테스트 버튼 - [쓰레드 채우기]
+        self.fill_threads_button = ttk.Button(
+            emotional_button_frame,
+            text="쓰레드 채우기",
+            style="TButton",
+            command=self.fill_threads_test
+        )
+        self.fill_threads_button.pack(side=tk.LEFT, padx=5)
+
+        # 감성 자동화 버튼 - 초기에는 비활성화
+        self.emotional_auto_button = ttk.Button(
+            emotional_button_frame,
+            text="감성 자동화 시작",
+            style="Green.TButton",
+            command=self.toggle_emotional_auto,
+            state="disabled"  # 초기에는 비활성화
+        )
+        self.emotional_auto_button.pack(side=tk.LEFT, padx=5)
+
+        # 감성 선택 포스팅 버튼 - 초기에는 비활성화
+        self.emotional_post_button = ttk.Button(
+            emotional_button_frame,
+            text="감성 선택 포스팅",
+            style="TButton",
+            command=self.emotional_single_post,
+            state="disabled"  # 초기에는 비활성화
+        )
+        self.emotional_post_button.pack(side=tk.LEFT, padx=5)
+
+        # 초기 상태에서는 자동화 관련 UI 요소 비활성화
+        self.emotional_auto_checkbox.config(state="disabled")
         
         # 데이터 미리보기 섹션 - 공통으로 사용
         threads_preview_frame = ttk.LabelFrame(self.main_frame, text="데이터 미리보기")
